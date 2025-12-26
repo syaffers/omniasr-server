@@ -14,7 +14,11 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["debugpy>=1.8.19", "pytest>=8.0.0"]
+dev = ["debugpy>=1.8.19", "pytest>=9.0.0"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+
+[[tool.uv.index]]
+name = "fairseq2-cu126"
+url = "https://fair.pkg.atmeta.com/fairseq2/whl/pt2.8.0/cu126"
