@@ -18,19 +18,25 @@ class OmnilingualASRService:
 
     def __init__(self):
         self.pipeline: ASRInferencePipeline | None = None
-        self.device: str | None = None
 
     def load_model(self) -> None:
         """Load the ASR model. Called once at startup."""
 
-        self.device = "cpu"
+        device = "cpu"
         if torch.cuda.is_available():
-            self.device = "cuda"
+            device = "cuda"
         elif torch.backends.mps.is_available():
-            self.device = "mps"
+            device = "mps"
 
-        logger.info(f"Loading model {MODEL_NAME} on {self.device}...")
-        self.pipeline = ASRInferencePipeline(model_card=MODEL_NAME, device=self.device)
+        # Use float16 for compute capability < 8.0 (e.g. T4)
+        dtype = torch.bfloat16
+        if torch.cuda.get_device_capability() < (8, 0):
+            dtype = torch.float16
+
+        logger.info(f"Loading model {MODEL_NAME} on {device}...")
+        self.pipeline = ASRInferencePipeline(
+            model_card=MODEL_NAME, device=device, dtype=dtype
+        )
         logger.info(f"Model {MODEL_NAME} loaded successfully on {self.device}")
 
     @property
