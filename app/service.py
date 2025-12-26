@@ -30,14 +30,14 @@ class OmnilingualASRService:
 
         # Use float16 for compute capability < 8.0 (e.g. T4)
         dtype = torch.bfloat16
-        if torch.cuda.get_device_capability() < (8, 0):
+        if device == "cuda" and torch.cuda.get_device_capability() < (8, 0):
             dtype = torch.float16
 
         logger.info(f"Loading model {MODEL_NAME} on {device}...")
         self.pipeline = ASRInferencePipeline(
             model_card=MODEL_NAME, device=device, dtype=dtype
         )
-        logger.info(f"Model {MODEL_NAME} loaded successfully on {self.device}")
+        logger.info(f"Model {MODEL_NAME} loaded successfully on {device}")
 
     @property
     def is_llm_model(self) -> bool:
