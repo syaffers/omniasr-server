@@ -5,7 +5,13 @@ description = "High-performance Omnilingual-ASR model server with OpenAI Whisper
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 dependencies = [
-    "litserve>=0.2.17",
     "omnilingual-asr>=0.2.0",
     "soundfile>=0.13.1",
+    "fastapi>=0.127.0",
+    "pydantic>=2.12.5",
+    "python-multipart>=0.0.21",
+    "uvicorn>=0.34.0",
 ]
+
+[dependency-groups]
+dev = ["debugpy>=1.8.19"]

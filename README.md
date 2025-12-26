@@ -18,14 +18,14 @@ High-performance ASR model server for [Omnilingual ASR](https://github.com/faceb
 docker build -t omnilingual-asr .
 
 # Run with GPU support
-docker run --gpus all -p 8000:8000 omnilingual-asr
+docker run --gpus all -p 8000:8080 omnilingual-asr
 ```
 
 ### Local Development
 
 ```bash
 # Install dependencies with uv
-uv sync --extra-index-url https://download.pytorch.org/whl/cu121
+uv sync --extra-index-url https://download.pytorch.org/whl/cu126
 
 # Run the server
 uv run python server.py
@@ -33,66 +33,52 @@ uv run python server.py
 
 ## API Usage
 
-The API is compatible with OpenAI's Whisper transcription endpoint.
+The API is (somewhat) compatible with OpenAI's Whisper transcription endpoint.
 
 ### Transcribe Audio
 
 ```bash
-curl -X POST http://localhost:8000/v1/audio/transcriptions \
+curl -X POST http://localhost:8080/v1/audio/transcriptions \
   -H "Content-Type: multipart/form-data" \
   -F "file=@audio.wav" \
-  -F "model=omniASR_CTC_1B_v2"
+  -F "model=omniASR_CTC_300M_v2"
 ```
 
 ### With Language Hint
 
+**ISO 639-1 (OpenAI API native)**
+
 ```bash
-curl -X POST http://localhost:8000/v1/audio/transcriptions \
+curl -X POST http://localhost:8080/v1/audio/transcriptions \
   -F "file=@audio.wav" \
   -F "model=omniASR_LLM_1B_v2" \
   -F "language=en"
+```
+
+**ISO 639-3 (Omnilingual-ASR native)**
+
+```bash
+curl -X POST http://localhost:8080/v1/audio/transcriptions \
+  -F "file=@audio.wav" \
+  -F "model=omniASR_LLM_1B_v2" \
+  -F "language=eng_Latn"
 ```
 
 ### Response Formats
 
 **JSON (default)**
 ```bash
-curl -X POST http://localhost:8000/v1/audio/transcriptions \
-  -F "file=@audio.wav" \
-  -F "response_format=json"
+curl -X POST http://localhost:8080/v1/audio/transcriptions -F "file=@audio.wav"
 ```
 ```json
 {"text": "Hello, world!"}
 ```
 
-**Verbose JSON**
-```bash
-curl -X POST http://localhost:8000/v1/audio/transcriptions \
-  -F "file=@audio.wav" \
-  -F "response_format=verbose_json"
-```
-```json
-{
-  "task": "transcribe",
-  "language": "en",
-  "duration": 2.5,
-  "text": "Hello, world!",
-  "segments": [...]
-}
-```
-
 **Plain Text**
 ```bash
-curl -X POST http://localhost:8000/v1/audio/transcriptions \
+curl -X POST http://localhost:8080/v1/audio/transcriptions \
   -F "file=@audio.wav" \
   -F "response_format=text"
-```
-
-**SRT/VTT Subtitles**
-```bash
-curl -X POST http://localhost:8000/v1/audio/transcriptions \
-  -F "file=@audio.wav" \
-  -F "response_format=srt"
 ```
 
 ### Python Client
@@ -101,13 +87,13 @@ curl -X POST http://localhost:8000/v1/audio/transcriptions \
 from openai import OpenAI
 
 client = OpenAI(
-    base_url="http://localhost:8000/v1",
+    base_url="http://localhost:8080/v1",
     api_key="not-needed"  # No auth required
 )
 
 with open("audio.wav", "rb") as audio_file:
     transcription = client.audio.transcriptions.create(
-        model="omniASR_CTC_1B_v2",
+        model="omniASR_CTC_300M_v2",
         file=audio_file
     )
     print(transcription.text)
@@ -130,21 +116,29 @@ with open("audio.wav", "rb") as audio_file:
 
 ## Configuration
 
-Configure via environment variables:
+### Changing the Model
+
+Edit `app/config.py` to change the model:
+
+```python
+MODEL_NAME = "omniASR_CTC_300M_v2"  # Change this to switch models
+```
+
+Then rebuild the Docker image or restart the server.
+
+### Environment Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `OMNILINGUAL_MODEL` | `omniASR_CTC_1B_v2` | Model to load |
 | `OMNILINGUAL_BATCH_SIZE` | `4` | Max batch size for inference |
 | `OMNILINGUAL_BATCH_TIMEOUT` | `0.05` | Seconds to wait for batch |
 | `OMNILINGUAL_WORKERS` | `1` | Workers per GPU |
 | `OMNILINGUAL_PORT` | `8000` | Server port |
 
-### Example: Running the 3B Model
+### Example: Custom Batch Size
 
 ```bash
-docker run --gpus all -p 8000:8000 \
-  -e OMNILINGUAL_MODEL=omniASR_CTC_3B_v2 \
+docker run --gpus all -p 8000:8080 \
   -e OMNILINGUAL_BATCH_SIZE=2 \
   omnilingual-asr
 ```
