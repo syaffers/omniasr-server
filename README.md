@@ -1,39 +1,44 @@
 # Omnilingual-ASR Model Server
 
-High-performance ASR model server for [Omnilingual ASR](https://github.com/facebookresearch/omnilingual-asr) with an OpenAI Whisper-compatible API.
-
-## Features
-
-- 🚀 **High Performance**: Built on [LitServe](https://github.com/Lightning-AI/LitServe) with batching support
-- 🎯 **OpenAI Compatible**: Drop-in replacement for OpenAI's Whisper API
-- 🌍 **1600+ Languages**: Leverages Meta's Omnilingual ASR models
-- 🐳 **GPU Ready**: Optimized Docker container with CUDA support
+A FastAPI-based ASR model server for [Omnilingual ASR](https://github.com/facebookresearch/omnilingual-asr) with an OpenAI Whisper-compatible API.
 
 ## Quick Start
-
-### Using Docker (Recommended)
-
-```bash
-# Build the image
-docker build -t omnilingual-asr .
-
-# Run with GPU support
-docker run --gpus all -p 8000:8080 omnilingual-asr
-```
 
 ### Local Development
 
 ```bash
 # Install dependencies with uv
-uv sync --extra-index-url https://download.pytorch.org/whl/cu126
+uv sync
 
 # Run the server
-uv run python server.py
+uv run python main.py
 ```
+
+### Building a Docker Image
+
+Currently I'm building with CUDA 12.6 and PyTorch 2.8.0. To build against a different CUDA version, you need to update the sources and indices in [pyproject.toml](pyproject.toml).
+
+```bash
+# Build the image
+docker build --build-arg MODEL_NAME=omniASR_LLM_300M_v2 -t omniasr-server .
+
+# Or...
+bash build.sh
+```
+
+See [`build.sh`](build.sh) for the build script.
+
+Then, run with GPU support:
+
+```bash
+docker run --gpus all -p 8080:8080 omniasr-server
+```
+
+I'm open to 💡 on how to streamline the build process so I can build for multiple CUDA and PyTorch versions.
 
 ## API Usage
 
-The API is (somewhat) compatible with OpenAI's Whisper transcription endpoint.
+The API is (somewhat) compatible with OpenAI's Whisper transcription endpoint. Some parameters (like `model`) are ignored (for now!) since the server only hosts one model and Omnilingual-ASR doesn't have all the features of Whisper.
 
 ### Transcribe Audio
 
@@ -46,6 +51,8 @@ curl -X POST http://localhost:8080/v1/audio/transcriptions \
 
 ### With Language Hint
 
+This works for the LLM variants only. For CTC and W2V, the `language` parameter is ignored.
+
 **ISO 639-1 (OpenAI API native)**
 
 ```bash
@@ -55,7 +62,7 @@ curl -X POST http://localhost:8080/v1/audio/transcriptions \
   -F "language=en"
 ```
 
-**ISO 639-3 (Omnilingual-ASR native)**
+**ISO 639-3 / Script (Omnilingual-ASR native)**
 
 ```bash
 curl -X POST http://localhost:8080/v1/audio/transcriptions \
@@ -63,6 +70,8 @@ curl -X POST http://localhost:8080/v1/audio/transcriptions \
   -F "model=omniASR_LLM_1B_v2" \
   -F "language=eng_Latn"
 ```
+
+Languages are mapped heuristically from ISO 639-1 (Whisper's API) to Omnilingual-ASR's format. See how it's mapped in [`app/languages.py`](app/languages.py). For the best results, use Omnilingual-ASR's language codes.
 
 ### Response Formats
 
@@ -83,90 +92,51 @@ curl -X POST http://localhost:8080/v1/audio/transcriptions \
 
 ### Python Client
 
-```python
-from openai import OpenAI
-
-client = OpenAI(
-    base_url="http://localhost:8080/v1",
-    api_key="not-needed"  # No auth required
-)
-
-with open("audio.wav", "rb") as audio_file:
-    transcription = client.audio.transcriptions.create(
-        model="omniASR_CTC_300M_v2",
-        file=audio_file
-    )
-    print(transcription.text)
+```bash
+uv run scripts/openai_client.py
 ```
 
-## Available Models
+See the [openai_client.py](scripts/openai_client.py) code. It's pretty straightforward.
 
-| Model | Type | Description |
-|-------|------|-------------|
-| `omniASR_CTC_300M_v2` | CTC | Fast, small model |
-| `omniASR_CTC_1B_v2` | CTC | Balanced performance (default) |
-| `omniASR_CTC_3B_v2` | CTC | Higher quality |
-| `omniASR_CTC_7B_v2` | CTC | Best CTC quality |
-| `omniASR_LLM_*_v2` | LLM | Language-conditioned, autoregressive |
-| `omniASR_LLM_Unlimited_*_v2` | LLM | Unlimited audio length support |
-
-**CTC models** are faster due to parallel generation but don't support language conditioning.
-
-**LLM models** support language hints for better accuracy but are slower.
 
 ## Configuration
 
-### Changing the Model
-
-Edit `app/config.py` to change the model:
-
-```python
-MODEL_NAME = "omniASR_CTC_300M_v2"  # Change this to switch models
-```
-
-Then rebuild the Docker image or restart the server.
 
 ### Environment Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `OMNILINGUAL_BATCH_SIZE` | `4` | Max batch size for inference |
-| `OMNILINGUAL_BATCH_TIMEOUT` | `0.05` | Seconds to wait for batch |
-| `OMNILINGUAL_WORKERS` | `1` | Workers per GPU |
-| `OMNILINGUAL_PORT` | `8000` | Server port |
+| `MODEL_NAME` | `omniASR_CTC_300M_v2` | Model to use for transcription |
+| `OMNILINGUAL_PORT` | `8080` | Server port |
+| `OMNILINGUAL_HOST` | `0.0.0.0` | Server host |
 
-### Example: Custom Batch Size
+### Changing the Model
+
+See [Omnilingual-ASR's GitHub page](https://github.com/facebookresearch/omnilingual-asr/tree/main?tab=readme-ov-file#model-architectures) for a list of available models.
+
+Set the `MODEL_NAME` environment variable to switch models when building:
 
 ```bash
-docker run --gpus all -p 8000:8080 \
-  -e OMNILINGUAL_BATCH_SIZE=2 \
-  omnilingual-asr
+docker run --gpus all -p 8080:8080 \
+  -e MODEL_NAME=omniASR_CTC_1B_v2 \
+  omniasr-server
 ```
+
+Or when running locally:
+
+```bash
+MODEL_NAME=omniASR_CTC_1B_v2 uv run python main.py
+```
+
+**NOTE:** When running locally, on the first run, `fairseq` will download the weights and cache it to your device. Subsequent runs only loads the cached weights.
 
 ## Endpoints
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/v1/audio/transcriptions` | POST | Transcribe audio file |
-| `/v1/models` | GET | List available models |
-| `/health` | GET | Health check |
-
-## Audio Requirements
-
-- **Supported formats**: WAV, FLAC, MP3, OGG, and other formats supported by libsndfile
-- **Sample rate**: Automatically resampled to 16kHz
-- **Channels**: Automatically converted to mono
-- **Duration**: Models work best with audio ≤30 seconds. Use `Unlimited` variants for longer audio.
-
-## Performance Tips
-
-1. **Use CTC models** for highest throughput when language conditioning isn't needed
-2. **Increase batch size** if you have memory headroom
-3. **Use the right model size** for your GPU memory:
-   - 300M: ~2GB VRAM
-   - 1B: ~4GB VRAM
-   - 3B: ~12GB VRAM
-   - 7B: ~28GB VRAM
+| `/v1/models` | GET | List the deployed model |
+| `/health-check` | GET | Health check |
 
 ## License
 
