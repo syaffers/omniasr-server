@@ -1,0 +1,11 @@
+[project]
+name = "omnilingual-asr-image"
+version = "0.1.0"
+description = "High-performance Omnilingual-ASR model server with OpenAI Whisper-compatible API"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "litserve>=0.2.17",
+    "omnilingual-asr>=0.2.0",
+    "soundfile>=0.13.1",
+]
