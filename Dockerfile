@@ -53,8 +53,8 @@ COPY main.py main.py
 COPY scripts/ scripts/
 
 # Pre-download model to cache during build
-RUN uv run scripts/preload.py
+RUN uv run --no-dev scripts/preload.py
 
 EXPOSE 8080
 
-CMD ["uv", "run", "main.py"]
+CMD ["uv", "run", "--no-dev", "main.py"]

@@ -1,5 +1,5 @@
 [project]
-name = "omnilingual-asr-image"
+name = "omniasr-server"
 version = "0.1.0"
 description = "High-performance Omnilingual-ASR model server with OpenAI Whisper-compatible API"
 readme = "README.md"
@@ -22,3 +22,7 @@ pythonpath = ["."]
 [[tool.uv.index]]
 name = "fairseq2-cu126"
 url = "https://fair.pkg.atmeta.com/fairseq2/whl/pt2.8.0/cu126"
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
