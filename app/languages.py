@@ -1,8 +1,14 @@
 """
 Language mappings for ASR systems.
-
-Provides mappings between OpenAI Whisper language codes and Omnilingual-ASR format.
 """
+
+import logging
+
+from omnilingual_asr.models.wav2vec2_llama.lang_ids import supported_langs
+
+logger = logging.getLogger(__name__)
+
+OMNILINGUAL_ASR_LANGUAGES: list[str] = set(supported_langs)
 
 # Whisper supported languages (2-letter code, full name)
 # Mapping from Whisper/OpenAI format to Omnilingual-ASR format
@@ -336,10 +342,8 @@ def map_whisper_to_omnilingual(language: str) -> str:
     if lang_lower in WHISPER_TO_OMNILINGUAL:
         return WHISPER_TO_OMNILINGUAL[lang_lower]
 
-    # If already in Omnilingual-ASR format (e.g., "eng_Latn"), return as-is
-    if "_" in language and len(language.split("_")) == 2:
+    if language in OMNILINGUAL_ASR_LANGUAGES:
         return language
 
-    # Default fallback
-    # logger.warning(f"Unknown language: {language}. Defaulting to 'eng_Latn'.")
+    logger.warning(f"Unknown language: {language}. Defaulting to 'eng_Latn'.")
     return "eng_Latn"
