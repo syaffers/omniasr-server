@@ -84,3 +84,6 @@ fi
 
 # Execute build command
 $BUILD_CMD .
+
+echo "Docker image built successfully! You can run it with:"
+echo "    docker run --gpus all -p 8080:8080 $IMAGE_NAME:$BASE_TAG-$TAG_SUFFIX"
