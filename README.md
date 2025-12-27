@@ -33,15 +33,22 @@ bash build.sh
 
 # Build with variant model, tag as latest, and push
 MODEL_NAME=omniASR_LLM_1B_v2 LATEST_TAG=true PUSH=true bash build.sh
+
+# Build with namespace
+NAMESPACE=abc bash build.sh
+
+# Build with namespace and push
+NAMESPACE=abc PUSH=true bash build.sh
 ```
 
 **Build script options:**
 
 - `MODEL_NAME` - Name of the model to build (default: `omniASR_LLM_300M_v2`)
+- `NAMESPACE` - Namespace/registry prefix for the image name (optional). If provided, images will be tagged as `NAMESPACE/omniasr-server`. If not provided, defaults to `omniasr-server`
 - `LATEST_TAG` - Set to `"true"` to also tag the image as `latest` (default: `false`)
 - `PUSH` - Set to `"true"` to push the image to the registry after building (default: `false`)
 
-The image will be tagged as `omniasr-server:cu126-pt280-<model-suffix>` where the model suffix is derived from the model name (e.g., `omniASR_LLM_300M_v2` becomes `llm-300m-v2`).
+The image will be tagged as `<namespace>/omniasr-server:cu126-pt280-<model-suffix>` where the model suffix is derived from the model name (e.g., `omniASR_LLM_300M_v2` becomes `llm-300m-v2`). If no namespace is provided, it defaults to `omniasr-server:cu126-pt280-<model-suffix>`.
 
 ### Manual build
 

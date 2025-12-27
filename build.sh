@@ -11,6 +11,11 @@
 #                   The model name is used to generate the image tag suffix.
 #                   Example: omniASR_LLM_1B_v2
 #
+#   NAMESPACE     - Namespace/registry prefix for the image name (optional)
+#                   If provided, images will be tagged as NAMESPACE/omniasr-server
+#                   Example: abc/omniasr-server
+#                   If not provided, defaults to omniasr-server
+#
 #   LATEST_TAG    - Set to "true" to also tag the image as "latest"
 #                   (default: false)
 #
@@ -34,6 +39,12 @@
 #   # Build with another variant model, tag as latest, and push
 #   MODEL_NAME=omniASR_LLM_1B_v2 LATEST_TAG=true PUSH=true bash build.sh
 #
+#   # Build with namespace
+#   NAMESPACE=abc bash build.sh
+#
+#   # Build with namespace and push
+#   NAMESPACE=abc PUSH=true bash build.sh
+#
 
 
 MODEL_NAME=${MODEL_NAME:-omniASR_LLM_300M_v2}
@@ -45,12 +56,19 @@ BASE_TAG=cu126-pt280
 #     omniASR_LLM_Unlimited_300M_v2 -> llm-unlimited-300m-v2
 TAG_SUFFIX=$(echo $MODEL_NAME | sed 's/^omniASR_//' | tr 'A-Z_' 'a-z-')
 
+# Build image name with optional namespace
+if [ -n "$NAMESPACE" ]; then
+    IMAGE_NAME="$NAMESPACE/omniasr-server"
+else
+    IMAGE_NAME="omniasr-server"
+fi
+
 # Build tags
-TAGS="-t omniasr-server:$BASE_TAG-$TAG_SUFFIX"
+TAGS="-t $IMAGE_NAME:$BASE_TAG-$TAG_SUFFIX"
 
 # Handle latest tag
 if [ "${LATEST_TAG:-false}" = "true" ]; then
-    TAGS="$TAGS -t omniasr-server:latest"
+    TAGS="$TAGS -t $IMAGE_NAME:latest"
 fi
 
 # Build command
