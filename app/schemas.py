@@ -17,17 +17,13 @@ class TranscriptionResponse(BaseModel):
 class ErrorResponse(BaseModel):
     """Error response format matching OpenAI's error schema."""
 
-    error: dict = Field(
-        ...,
-        description="Error details",
-        examples=[
-            {
-                "message": "Invalid file format",
-                "type": "invalid_request_error",
-                "code": "invalid_file",
-            }
-        ],
-    )
+    class ErrorInfo(BaseModel):
+        message: str = Field(..., description="The error message")
+        type: str = Field(..., description="The error type")
+        param: str | None = Field(None, description="The error parameter")
+        code: str | None = Field(None, description="The error code")
+
+    error: ErrorInfo = Field(..., description="Error details")
 
 
 class ModelsResponse(BaseModel):
