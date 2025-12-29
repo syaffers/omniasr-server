@@ -53,7 +53,8 @@ COPY main.py main.py
 COPY scripts/ scripts/
 
 # Pre-download model to cache during build
-RUN uv run --no-dev scripts/preload.py
+RUN uv run --no-dev scripts/preload.py \
+    && chmod -R a+rX /models
 
 EXPOSE 8080
 
