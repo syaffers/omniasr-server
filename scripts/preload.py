@@ -2,24 +2,43 @@
 
 import os
 
-import torch
-from fairseq2.data.tokenizers.hub import load_tokenizer
-from fairseq2.models.hub import load_model
+from fairseq2.assets import AssetDownloadManager, AssetStore
+from fairseq2.data.tokenizers.ref import resolve_tokenizer_reference
+from fairseq2.runtime.dependency import get_dependency_resolver
 
 MODEL_NAME = os.getenv("MODEL_NAME", "omniASR_CTC_300M_v2")
 
 
-def preload_model():
-    """Download model and tokenizer to cache (CPU only, for caching purposes)."""
-    print(f"Pre-downloading model: {MODEL_NAME}")
+def preload_assets():
+    """Download model checkpoint and tokenizer files to cache (no model loading)."""
+    print(f"Pre-downloading assets for model: {MODEL_NAME}")
 
-    # Use CPU with float32 for download - actual inference will use appropriate device/dtype
-    load_model(MODEL_NAME, device=torch.device("cpu"), dtype=torch.float32)
-    print(f"Model {MODEL_NAME} downloaded")
+    resolver = get_dependency_resolver()
+    asset_store = resolver.resolve(AssetStore)
+    download_manager = resolver.resolve(AssetDownloadManager)
 
-    load_tokenizer(MODEL_NAME)
-    print(f"Tokenizer {MODEL_NAME} downloaded")
+    # Retrieve model's asset card
+    card = asset_store.retrieve_card(MODEL_NAME)
+
+    # Download model checkpoint
+    checkpoint_uri = card.field("checkpoint").as_uri()
+    print(f"Downloading model checkpoint from: {checkpoint_uri}")
+    checkpoint_path = download_manager.download_model(
+        checkpoint_uri, MODEL_NAME, progress=True
+    )
+    print(f"Model checkpoint downloaded to: {checkpoint_path}")
+
+    # Resolve tokenizer reference and download tokenizer file
+    tokenizer_card = resolve_tokenizer_reference(asset_store, card)
+    tokenizer_uri = tokenizer_card.field("tokenizer").as_uri()
+    print(f"Downloading tokenizer from: {tokenizer_uri}")
+    tokenizer_path = download_manager.download_tokenizer(
+        tokenizer_uri, tokenizer_card.name, progress=True
+    )
+    print(f"Tokenizer downloaded to: {tokenizer_path}")
+
+    print(f"All assets for {MODEL_NAME} downloaded successfully!")
 
 
 if __name__ == "__main__":
-    preload_model()
+    preload_assets()
