@@ -9,9 +9,9 @@ from fairseq2.runtime.dependency import get_dependency_resolver
 MODEL_NAME = os.getenv("MODEL_NAME", "omniASR_CTC_300M_v2")
 
 
-def preload_assets():
-    """Download model checkpoint and tokenizer files to cache (no model loading)."""
-    print(f"Pre-downloading assets for model: {MODEL_NAME}")
+def preload_model():
+    """Download model and tokenizer into cache."""
+    print(f"Pre-downloading model: {MODEL_NAME}")
 
     resolver = get_dependency_resolver()
     asset_store = resolver.resolve(AssetStore)
@@ -41,4 +41,4 @@ def preload_assets():
 
 
 if __name__ == "__main__":
-    preload_assets()
+    preload_model()
